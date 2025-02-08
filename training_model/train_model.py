@@ -4,9 +4,10 @@ import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from load_training_data import LoadTrainingData
 
+
 data_loader = LoadTrainingData()
 
-file_path = "/Users/olaaustine/Documents/agent_trade/data/"
+file_path = os.getenv("AGENT_TRADE_PATH", "./data/")
 file_paths = [os.path.join(file_path, file) for file in os.listdir(file_path) if file.endswith(".csv")]
 
 class TrainTheModel():

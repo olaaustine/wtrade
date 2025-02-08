@@ -1,5 +1,9 @@
 import yfinance as yf
 import pandas 
+import os
+
+data_path = os.getenv("AGENT_TRADE_PATH", "./data/")
+
 
 # the top 25 as of SP500
 SP_500 = [
@@ -14,6 +18,6 @@ for SP in SP_500:
     
     # Save each ticker's data to a CSV file
     filename = f"{SP}.csv"  # File name for each stock
-    download_file = "/Users/olaaustine/Documents/agent_trade/data/" + filename
+    download_file = data_path + filename
     data.to_csv(download_file, sep="\t", index=True)
 
