@@ -1,7 +1,9 @@
 import os
 import pandas as pd
+import numpy as np
 import xgboost as xgb
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, r2_score
 from load_training_data import LoadTrainingData
 
 
@@ -13,6 +15,7 @@ file_paths = [os.path.join(file_path, file) for file in os.listdir(file_path) if
 class TrainTheModel():
     
     def train_model(self, X, Y):
+
         params = {
             'objective': 'reg:squarederror',  # Regression task, giving it a regression task because regression is better to train the stock model
             'eval_metric': 'rmse',  # Root Mean Squared Error, because it is a regression task 
@@ -34,24 +37,56 @@ class TrainTheModel():
         # Number of boosting rounds
         model = xgb.train(params, dtrain, num_boost_round=100)
 
-        # Make predictions
-        Y_pred = model.predict(dtest)
+        Y_train_pred = model.predict(dtrain)  # Predictions on training set
+        Y_test_pred = model.predict(dtest)  # Predictions on test set
 
-        return model, Y_pred # we return model for future use
+        # Evaluate using RMSE
+        # measures how far the predicted values are from the actual values
+        #lower RSME means better performance
+        train_rmse = np.sqrt(mean_squared_error(Y_train, Y_train_pred))
+        test_rmse = np.sqrt(mean_squared_error(Y_test, Y_test_pred))
+
+        # Evaluate using R² Score
+        # measures how well the model explains variance in the target variable 
+        # 1 is perfect 
+        # 0 performs as well as predicting the mean
+        train_r2 = r2_score(Y_train, Y_train_pred)
+        test_r2 = r2_score(Y_test, Y_test_pred)
+
+        print(f"Training RMSE: {train_rmse:.4f}, Test RMSE: {test_rmse:.4f}")
+        print(f"Training R² Score: {train_r2:.4f}, Test R² Score: {test_r2:.4f}")
+
+        return model, Y_test_pred
     
     def concat_all_files_together(self, file_path, load_data):
         X_all = []
         Y_all = []
         for file in file_path:
             X, Y = data_loader.load_training_data(file)  # Replace with actual file path
+            # X_average, Y_average = data_loader.load_average_data(file)
+            # X_daily_return, Y_daily_return = data_loader.load_daily_return(file)
+            # X_seven_return, Y_seven_return = data_loader.load_seven_day_average(file)
+            # X_thirty_return, Y_thirty_return = data_loader.load_thirty_day_average(file)
 
-            # Handle missing values
+            #            # Merge all features into a single DataFrame
+            # X = pd.concat([X, X_average, X_daily_return, X_seven_return, X_thirty_return], axis=1)
 
-            X = X.apply(pd.to_numeric, errors="coerce") # this will turn my df to numeric and makes sure empty column is turned to Nan
-            Y = pd.to_numeric(Y, errors="coerce") # this will turn my series to numeric and makes sure empty column is turned to Nan
+            # Y = pd.concat([pd.Series(Y_average).repeat(len(Y_daily_return)).reset_index(drop=True), 
+            #    Y_daily_return.reset_index(drop=True), 
+            #    Y_seven_return.reset_index(drop=True), 
+            #    Y_thirty_return.reset_index(drop=True)], axis=1)
+
 
             X.dropna(inplace=True) # remove any rows where one of the column is Nan
+            # X_average.dropna(inplace=True)
+            # X_daily_return.dropna(inplace=True)
+            # X_seven_return.dropna(inplace=True)
+            # X_thirty_return.dropna(inplace=True)
             Y.dropna(inplace=True) # remove any rows where one of the column is Nan
+            # Y_average.dropna(inplace=True)
+            # Y_daily_return.dropna(inplace=True)
+            # Y_seven_return.dropna(inplace=True)
+            # Y_thirty_return.dropna(inplace=True)
 
             X_all.append(X)
             Y_all.append(Y)
@@ -72,4 +107,4 @@ if __name__ == "__main__":
     # Combine all data
     X, Y = trainer.concat_all_files_together(file_paths, data_loader)
 
-    print(trainer.train_model(X, Y))
+    trainer.train_model(X, Y)
